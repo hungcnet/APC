@@ -4,6 +4,23 @@
 <meta charset="utf-8">
 <title>APC-GROUP Quản lý tài sản</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Quản lý TS">
+<meta name="theme-color" content="#ffffff">
+<meta name="format-detection" content="telephone=no">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<style>
+html{overscroll-behavior-y:none;-webkit-text-size-adjust:100%}
+body{-webkit-touch-callout:none}
+input,textarea,[contenteditable]{-webkit-touch-callout:default;-webkit-user-select:text;user-select:text}
+@media (display-mode:standalone){
+  body{padding-bottom:env(safe-area-inset-bottom)}
+  .toast{bottom:calc(28px + env(safe-area-inset-bottom))}
+}
+</style>
 <script>
 /* ==========================================================================
    CẦU NỐI APPS SCRIPT -> VERCEL / CLOUDFLARE
