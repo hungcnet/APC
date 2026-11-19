@@ -1158,6 +1158,7 @@ function veKhung() {
         '<header class="tb"><button class="ibtn tb-menu" data-act="moSb" aria-label="Menu">' + ic('menu') + '</button>' +
           '<div class="tb-tim" data-act="moQk">' + ic('search') + '<span>Tìm tài sản, nhân viên, trang</span><span class="kbd">Ctrl K</span></div>' +
           '<div class="tb-phai"><span class="tb-ngay" id="tbngay"></span>' +
+            '<button class="ibtn tb-qr" data-act="quetQR" title="Quét mã QR" aria-label="Quét mã QR">' + ic('qr') + '</button>' +
             '<button class="ibtn" data-act="lamMoi" title="Tải lại dữ liệu">' + ic('refresh') + '</button>' +
             '<span id="tnBox">' + taoNhanh() + '</span><span id="tkBox"></span></div></header>' +
         '<main class="pg" id="pg"><div class="cho"><div class="spin"></div>Đang tải dữ liệu</div></main>' +
@@ -6288,6 +6289,227 @@ ACT.mauLuu = function (el) {
       S.kkSua = {}; S.route = toi; render();
     });
   } catch (e) {}
+})();
+</script>
+
+<style>
+/* ---- Quét mã QR bằng camera (chỉ hiện nút trên điện thoại / màn hình hẹp) ---- */
+.tb-qr{display:none}
+@media (max-width:900px){.tb-qr{display:inline-flex}}
+@media (max-width:560px){.tb{gap:10px}.tb-phai{gap:8px}}
+.qs{position:fixed;inset:0;z-index:88;display:none;background:#000;color:#fff;touch-action:none;overscroll-behavior:contain}
+.qs.on{display:block}
+.qs video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#000}
+.qs-top{position:absolute;left:0;right:0;top:0;display:flex;align-items:center;gap:12px;padding:calc(12px + env(safe-area-inset-top)) 16px 28px;background:linear-gradient(rgba(0,0,0,.62),rgba(0,0,0,0))}
+.qs-t{flex:1;min-width:0;font-size:16px;font-weight:700}
+.qs-b{width:40px;height:40px;flex:none;border-radius:50%;border:0;background:rgba(255,255,255,.18);color:#fff;display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
+.qs-b svg.i{width:20px;height:20px}
+.qs-khung{position:absolute;left:50%;top:44%;width:min(68vw,300px);aspect-ratio:1/1;transform:translate(-50%,-50%);border-radius:18px;box-shadow:0 0 0 100vmax rgba(0,0,0,.5);pointer-events:none}
+.qs-khung i{position:absolute;width:30px;height:30px;border:4px solid #fff}
+.qs-khung i:nth-child(1){left:-2px;top:-2px;border-right:0;border-bottom:0;border-top-left-radius:18px}
+.qs-khung i:nth-child(2){right:-2px;top:-2px;border-left:0;border-bottom:0;border-top-right-radius:18px}
+.qs-khung i:nth-child(3){left:-2px;bottom:-2px;border-right:0;border-top:0;border-bottom-left-radius:18px}
+.qs-khung i:nth-child(4){right:-2px;bottom:-2px;border-left:0;border-top:0;border-bottom-right-radius:18px}
+.qs-khung .qs-line{position:absolute;left:8%;right:8%;top:8%;height:2px;border-radius:2px;background:#fff;box-shadow:0 0 10px 2px rgba(255,255,255,.7);animation:qsq 2.2s ease-in-out infinite}
+@keyframes qsq{0%,100%{top:8%}50%{top:92%}}
+.qs-msg{position:absolute;left:16px;right:16px;bottom:calc(84px + env(safe-area-inset-bottom));text-align:center;font-size:14px;line-height:1.5;text-shadow:0 1px 3px rgba(0,0,0,.7)}
+.qs-msg.err{margin:0 auto;max-width:420px;padding:10px 14px;border-radius:12px;background:rgba(190,40,40,.92);text-shadow:none}
+.qs-bot{position:absolute;left:0;right:0;bottom:0;display:flex;gap:10px;justify-content:center;flex-wrap:wrap;padding:12px 16px calc(16px + env(safe-area-inset-bottom))}
+.qs-n{height:44px;padding:0 18px;border-radius:9999px;border:0;background:rgba(255,255,255,.2);color:#fff;font:inherit;font-weight:600;font-size:14px;display:inline-flex;align-items:center;gap:8px;cursor:pointer}
+.qs-n[hidden]{display:none}
+.qs-n.on{background:#fff;color:#111}
+.qs-n svg.i{width:18px;height:18px}
+</style>
+<script>
+/* ==========================================================================
+   Quét mã QR bằng camera ngay trong app (nút cạnh "Tải lại dữ liệu" trên thanh trên).
+   Tem QR mã hoá link  .../?ts=MÃ  -> đọc ra MÃ -> mở thẳng hồ sơ tài sản (go('ts/MÃ')).
+   Đọc bằng BarcodeDetector nếu trình duyệt có (Chrome / Android), không thì dùng jsQR (iPhone Safari).
+   Không có camera / bị chặn quyền: nút "Chọn ảnh QR" đọc mã từ ảnh chụp hoặc ảnh trong máy.
+   ========================================================================== */
+(function () {
+  var JSQR_URL = 'https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js';
+  var Q = { mo: false, dang: false, stream: null, track: null, timer: 0, det: null, cvs: null, ctx: null, cuoi: '', tuc: 0, ban: false, den: false };
+
+  function ve() {
+    var el = document.getElementById('qs');
+    if (el) return el;
+    el = document.createElement('div');
+    el.id = 'qs'; el.className = 'qs'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); el.setAttribute('aria-label', 'Quét mã QR');
+    el.innerHTML =
+      '<video id="qsv" playsinline muted autoplay></video>' +
+      '<div class="qs-top"><div class="qs-t">Quét tem QR tài sản</div><button type="button" class="qs-b" id="qsx" aria-label="Đóng">' + ic('x') + '</button></div>' +
+      '<div class="qs-khung"><i></i><i></i><i></i><i></i><span class="qs-line"></span></div>' +
+      '<div class="qs-msg" id="qsm"></div>' +
+      '<div class="qs-bot"><button type="button" class="qs-n" id="qsd" hidden>' + ic('zap') + '<span>Bật đèn</span></button>' +
+      '<button type="button" class="qs-n" id="qsa">' + ic('upload') + '<span>Chọn ảnh QR</span></button></div>' +
+      '<input type="file" id="qsf" accept="image/*" hidden>';
+    document.body.appendChild(el);
+    document.getElementById('qsx').onclick = dong;
+    document.getElementById('qsd').onclick = den;
+    document.getElementById('qsa').onclick = function () { document.getElementById('qsf').click(); };
+    document.getElementById('qsf').onchange = function () { var f = this.files && this.files[0]; this.value = ''; if (f) docAnh(f); };
+    return el;
+  }
+  function msg(t, loi) { var m = document.getElementById('qsm'); if (!m) return; m.textContent = t || ''; m.className = 'qs-msg' + (loi ? ' err' : ''); }
+
+  /* ---- bộ đọc ---- */
+  function taoDet() {
+    if (Q.det !== null) return Promise.resolve(Q.det);
+    if (!window.BarcodeDetector) { Q.det = false; return Promise.resolve(false); }
+    return BarcodeDetector.getSupportedFormats().then(function (f) {
+      Q.det = f.indexOf('qr_code') >= 0 ? new BarcodeDetector({ formats: ['qr_code'] }) : false; return Q.det;
+    }).catch(function () { Q.det = false; return false; });
+  }
+  function taiJsQR() {
+    if (window.jsQR) return Promise.resolve(window.jsQR);
+    return new Promise(function (ok, hong) {
+      var s = document.createElement('script'); s.src = JSQR_URL;
+      s.onload = function () { window.jsQR ? ok(window.jsQR) : hong(new Error('jsQR')); };
+      s.onerror = function () { hong(new Error('Không tải được bộ đọc QR. Kiểm tra mạng rồi thử lại.')); };
+      document.head.appendChild(s);
+    });
+  }
+  function dau(r) { return r && r.length ? (r[0].rawValue || '') : ''; }
+  function docCanvas(cv, ky) {
+    var truoc = Q.det ? Q.det.detect(cv).then(dau).catch(function () { return ''; }) : Promise.resolve('');
+    return truoc.then(function (v) {
+      if (v || Q.det) return v;
+      return taiJsQR().then(function (jq) {
+        var d = cv.getContext('2d').getImageData(0, 0, cv.width, cv.height);
+        var r = jq(d.data, d.width, d.height, { inversionAttempts: ky ? 'attemptBoth' : 'dontInvert' });
+        return r ? r.data : '';
+      });
+    });
+  }
+  function docKhung() {
+    var v = document.getElementById('qsv');
+    if (Q.det) return Q.det.detect(v).then(dau).catch(function () { return ''; });
+    var w = v.videoWidth, h = v.videoHeight;
+    if (!w || !window.jsQR) return Promise.resolve('');
+    var k = Math.min(1, 640 / w);
+    if (!Q.cvs) { Q.cvs = document.createElement('canvas'); Q.ctx = Q.cvs.getContext('2d', { willReadFrequently: true }); }
+    Q.cvs.width = Math.round(w * k); Q.cvs.height = Math.round(h * k);
+    Q.ctx.drawImage(v, 0, 0, Q.cvs.width, Q.cvs.height);
+    var d = Q.ctx.getImageData(0, 0, Q.cvs.width, Q.cvs.height);
+    var r = window.jsQR(d.data, d.width, d.height, { inversionAttempts: 'dontInvert' });
+    return Promise.resolve(r ? r.data : '');
+  }
+
+  /* ---- từ nội dung QR ra mã tài sản ---- */
+  function layMa(t) {
+    t = String(t || '').trim();
+    var m = t.match(/[?&]ts=([^&#\s]+)/i) || t.match(/#ts\/([^&\s]+)/i);
+    if (m) { try { return decodeURIComponent(m[1]).trim(); } catch (e) { return m[1].trim(); } }
+    return t;
+  }
+  function timTS(ma) {
+    var ix = (S.ix && S.ix.ts) || {};
+    if (ix[ma]) return ix[ma];
+    var k = Object.keys(ix).filter(function (x) { return x.toLowerCase() === String(ma).toLowerCase(); })[0];
+    return k ? ix[k] : null;
+  }
+  function ketQua(txt) {
+    if (!txt) return;
+    var bay = Date.now();
+    if (txt === Q.cuoi && bay - Q.tuc < 2500) return; // cùng một tem đang nằm trong khung: không báo lặp
+    Q.cuoi = txt; Q.tuc = bay;
+    var ma = layMa(txt), a = timTS(ma);
+    if (!a) { msg('Quét được "' + (ma.length > 40 ? ma.slice(0, 40) + '…' : ma) + '" nhưng không có tài sản này trong dữ liệu. Thử tem khác.', true); return; }
+    try { if (navigator.vibrate) navigator.vibrate(60); } catch (e) {}
+    dong();
+    go('ts/' + encodeURIComponent(a.ma));
+  }
+
+  /* ---- vòng quét ---- */
+  function quet() {
+    if (!Q.dang) return;
+    var v = document.getElementById('qsv');
+    if (v && v.readyState >= 2 && !Q.ban) {
+      Q.ban = true;
+      docKhung().then(ketQua, function () {}).then(function () { Q.ban = false; });
+    }
+    Q.timer = setTimeout(quet, 140);
+  }
+  function tat() {
+    Q.dang = false; clearTimeout(Q.timer);
+    if (Q.stream) Q.stream.getTracks().forEach(function (t) { t.stop(); });
+    Q.stream = null; Q.track = null; Q.den = false; Q.ban = false;
+    var v = document.getElementById('qsv'); if (v) { try { v.pause(); } catch (e) {} v.srcObject = null; }
+  }
+  function dong() {
+    Q.mo = false; tat();
+    var el = document.getElementById('qs'); if (el) el.classList.remove('on');
+  }
+  function den() {
+    if (!Q.track) return;
+    var bat = !Q.den;
+    Q.track.applyConstraints({ advanced: [{ torch: bat }] }).then(function () {
+      Q.den = bat;
+      var b = document.getElementById('qsd'); b.classList.toggle('on', bat); b.querySelector('span').textContent = bat ? 'Tắt đèn' : 'Bật đèn';
+    }).catch(function () { msg('Máy này không bật được đèn flash.', true); });
+  }
+  function loiCamera(e) {
+    var n = e && e.name, t;
+    if (n === 'NotAllowedError' || n === 'SecurityError') t = 'Chưa được phép dùng camera. Cho phép camera cho trang này trong cài đặt trình duyệt rồi quét lại, hoặc bấm "Chọn ảnh QR".';
+    else if (n === 'NotFoundError' || n === 'OverconstrainedError') t = 'Không tìm thấy camera trên thiết bị này. Bấm "Chọn ảnh QR" để đọc từ ảnh.';
+    else if (n === 'NotReadableError') t = 'Camera đang được ứng dụng khác dùng. Đóng ứng dụng đó rồi thử lại.';
+    else t = (e && e.message) || 'Không mở được camera.';
+    msg(t, true);
+  }
+
+  function mo() {
+    if (Q.mo) return;
+    if (typeof dongTN === 'function') dongTN();
+    if (typeof dongSb === 'function') dongSb();
+    var el = ve(), v = document.getElementById('qsv');
+    Q.mo = true; Q.cuoi = ''; Q.tuc = 0;
+    el.classList.add('on');
+    document.getElementById('qsd').hidden = true;
+    msg('Đang mở camera…');
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      msg(window.isSecureContext === false ? 'Cần mở app bằng địa chỉ https để dùng camera. Bấm "Chọn ảnh QR" để đọc từ ảnh.' : 'Trình duyệt này không hỗ trợ camera. Bấm "Chọn ảnh QR" để đọc từ ảnh.', true);
+      return;
+    }
+    navigator.mediaDevices.getUserMedia({ audio: false, video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } } })
+      .then(function (st) {
+        if (!Q.mo) { st.getTracks().forEach(function (t) { t.stop(); }); return; } // đóng trước khi camera kịp mở
+        Q.stream = st; Q.track = st.getVideoTracks()[0] || null;
+        v.muted = true; v.setAttribute('playsinline', ''); v.srcObject = st;
+        return v.play().then(taoDet).then(function () { return Q.det ? 0 : taiJsQR(); }).then(function () {
+          if (!Q.mo) return;
+          try { var cap = Q.track && Q.track.getCapabilities && Q.track.getCapabilities(); if (cap && cap.torch) document.getElementById('qsd').hidden = false; } catch (e) {}
+          msg('Đưa tem QR vào giữa khung');
+          Q.dang = true; quet();
+        });
+      })
+      .catch(function (e) { if (Q.mo) { tat(); loiCamera(e); } });
+  }
+
+  /* ---- đọc từ ảnh ---- */
+  function docAnh(file) {
+    msg('Đang đọc ảnh…');
+    new Promise(function (ok, hong) {
+      var url = URL.createObjectURL(file), im = new Image();
+      im.onload = function () {
+        var k = Math.min(1, 1600 / Math.max(im.naturalWidth, im.naturalHeight)), c = document.createElement('canvas');
+        c.width = Math.max(1, Math.round(im.naturalWidth * k)); c.height = Math.max(1, Math.round(im.naturalHeight * k));
+        c.getContext('2d', { willReadFrequently: true }).drawImage(im, 0, 0, c.width, c.height); URL.revokeObjectURL(url); ok(c);
+      };
+      im.onerror = function () { URL.revokeObjectURL(url); hong(new Error('Không mở được ảnh này.')); };
+      im.src = url;
+    }).then(function (c) { return taoDet().then(function () { return docCanvas(c, true); }); })
+      .then(function (t) {
+        if (!t) { msg('Không thấy mã QR trong ảnh. Chụp gần hơn, đủ sáng, để cả tem nằm trong ảnh.', true); return; }
+        Q.cuoi = ''; ketQua(t);
+      })
+      .catch(function (e) { msg(e.message || 'Không đọc được ảnh.', true); });
+  }
+
+  ACT.quetQR = mo;
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && Q.mo) { e.stopImmediatePropagation(); e.preventDefault(); dong(); } }, true);
+  document.addEventListener('visibilitychange', function () { if (document.hidden && Q.mo) dong(); });
+  window.addEventListener('pagehide', function () { if (Q.mo) dong(); });
 })();
 </script>
 
