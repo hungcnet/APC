@@ -1009,6 +1009,7 @@ function ngoaiPV(a) {
 /* ---- dữ liệu ---- */
 function setData(d) {
   var coTL = S.d ? khongTL() : null;
+  if (d && d.dm && !d.dm.congTy) d.dm.congTy = []; // máy chủ bản cũ chưa có danh mục Công ty
   S.d = d; S.ix = { ts: {}, nv: {} }; S.giu = {}; S.muonMo = {};
   d.ky = d.ky || [];
   if (d.me) { var doi = !S.me || JSON.stringify(S.me) !== JSON.stringify(d.me) || (coTL !== null && coTL !== khongTL()); S.me = d.me; if (doi && window.apQuyen) apQuyen(); }
@@ -2388,8 +2389,8 @@ function locTab(a, t) {
 function dsTSLoc() {
   var f = F('tai-san');
   return S.d.ts.filter(function (a) {
-    return locTab(a, f.tab || 'ql') && (!f.loai || a.loai === f.loai) && (!f.pb || a.phongBan === f.pb) && (!f.vt || a.viTri === f.vt) &&
-      khop(f.q, [a.ma, a.ten, a.serial, a.model, a.thuongHieu, nvTen(a.nguoiSD), a.nguoiSD, a.viTri, a.phongBan]);
+    return locTab(a, f.tab || 'ql') && (!f.loai || a.loai === f.loai) && (!f.pb || a.phongBan === f.pb) && (!f.vt || a.viTri === f.vt) && (!f.ct || a.congTy === f.ct) &&
+      khop(f.q, [a.ma, a.ten, a.serial, a.model, a.thuongHieu, nvTen(a.nguoiSD), a.nguoiSD, a.viTri, a.phongBan, a.congTy]);
   });
 }
 VIEW['tai-san'] = {
@@ -2410,7 +2411,8 @@ VIEW['tai-san'] = {
     h += '<div class="card"><div class="loc">' + oTim('tai-san', 'Tìm mã, tên, serial, người dùng') +
       chipSel('tai-san', 'loai', 'Tất cả loại', uniq(S.d.dm.loai.concat(S.d.ts.map(function (a) { return a.loai; })))) +
       chipSel('tai-san', 'pb', 'Tất cả phòng ban', uniq(S.d.dm.phongBan.concat(S.d.ts.map(function (a) { return a.phongBan; })))) +
-      chipSel('tai-san', 'vt', 'Tất cả vị trí', dsViTri()) + '<span class="dem-kq" id="demkq"></span></div><div id="ds">' + this.ds() + '</div></div>';
+      chipSel('tai-san', 'vt', 'Tất cả vị trí', dsViTri()) +
+      chipSel('tai-san', 'ct', 'Tất cả công ty', uniq(S.d.dm.congTy.concat(S.d.ts.map(function (a) { return a.congTy; })))) + '<span class="dem-kq" id="demkq"></span></div><div id="ds">' + this.ds() + '</div></div>';
     h += '<div class="hl" id="hl"></div>';
     return h;
   },
@@ -2444,7 +2446,7 @@ ACT.moSheet = function () { if (S.d.ssUrl) window.open(S.d.ssUrl, '_blank'); };
 ACT.xuatTS = function (el) {
   var so = function (k) { return function (a) { return Number(a[k]) || 0; }; }, chu = function (k) { return function (a) { return a[k]; }; }, ng = function (k) { return function (a) { return ngay(a[k]); }; };
   var tienKH = khongTien() ? [] : [['Nguyên giá', so('nguyenGia')], ['Khấu hao (năm)', so('thoiGianKH')], ['Đã khấu hao', so('khLuyKe')], ['Giá trị còn lại', so('gtcl')]];
-  xuatExcel('Tai san', [['Mã tài sản', chu('ma')], ['Tên tài sản', chu('ten')], ['Nhóm', function (a) { return a.nhom || NHOM.CCDC; }], ['Đơn vị tính', chu('dvt')], ['Loại', chu('loai')], ['Thương hiệu', chu('thuongHieu')], ['Model', chu('model')],
+  xuatExcel('Tai san', [['Mã tài sản', chu('ma')], ['Tên tài sản', chu('ten')], ['Công ty', chu('congTy')], ['Nhóm', function (a) { return a.nhom || NHOM.CCDC; }], ['Đơn vị tính', chu('dvt')], ['Loại', chu('loai')], ['Thương hiệu', chu('thuongHieu')], ['Model', chu('model')],
     ['Số serial', chu('serial')], ['Ngày mua', ng('ngayMua')], ['Tháng năm sử dụng', function (a) { return thangNam(a.thangSD); }], ['Nhà cung cấp', chu('nhaCungCap')]].concat(tienKH, [
     ['Hạn bảo hành', ng('hanBH')], ['Tình trạng', chu('tinhTrang')], ['Ngày báo hư / mất', ng('ngayHM')],
     ['Người sử dụng', function (a) { return nvTen(a.nguoiSD); }], ['Mã NV', chu('nguoiSD')], ['Phòng ban', chu('phongBan')], ['Vị trí', chu('viTri')],
@@ -2481,7 +2483,7 @@ VIEW.ts = {
       kv('Thương hiệu', esc(a.thuongHieu)) + kv('Model', esc(a.model)) + kv('Số serial', esc(a.serial)) +
       kv('Ngày mua', ngay(a.ngayMua)) + kv('Hạn bảo hành', bh, a.hanBH && a.conBH < 0 ? 'bad' : a.hanBH && a.conBH <= S.d.caiDat.baoTruocBH ? 'warn' : '') +
       kv('Bảo trì tiếp theo', bt, a.conBT !== null && a.conBT < 0 ? 'bad' : a.conBT !== null && a.conBT <= S.d.caiDat.baoTruocBT ? 'warn' : '') +
-      kv('Người sử dụng', a.nguoiSD ? nvLink(a.nguoiSD) : '') + kv('Phòng ban', esc(a.phongBan)) + kv('Vị trí', esc(a.viTri)) +
+      kv('Công ty', esc(a.congTy)) + kv('Người sử dụng', a.nguoiSD ? nvLink(a.nguoiSD) : '') + kv('Phòng ban', esc(a.phongBan)) + kv('Vị trí', esc(a.viTri)) +
       kv('Nhóm', esc(a.nhom || NHOM.CCDC)) + kv('Đơn vị tính', esc(a.dvt)) + kv('Tháng năm sử dụng', thangNam(a.thangSD)) +
       (a.ngayHM && (T === 'Hỏng' || T === 'Thất lạc' || T === 'Đang sửa chữa') ? kv(T === 'Thất lạc' ? 'Báo mất ngày' : 'Báo hư ngày', ngay(a.ngayHM), 'bad') : '') +
       (ngoaiPV(a) ? kv('Phạm vi quản lý', ngoaiPV(a) === 'kho' ? 'Đã nộp về kho, không còn trong danh sách đang quản lý' : 'Đã giao ' + esc(a.phongBan) + ', ngoài phạm vi quản lý', 'warn') : '') +
@@ -2736,10 +2738,11 @@ function moTS(ma, goc) {
   var a = ma ? S.ix.ts[ma] : null, moi = !a, dm = S.d.dm;
   if (goc) a = null;
   a = a || (goc ? { ten: goc.ten, loai: goc.loai, thuongHieu: goc.thuongHieu, model: goc.model, ngayMua: goc.ngayMua, nhaCungCap: goc.nhaCungCap,
-    nguyenGia: goc.nguyenGia, thoiGianKH: goc.thoiGianKH, hanBH: goc.hanBH, ngayBTTiep: goc.ngayBTTiep, ghiChu: goc.ghiChu, dvt: goc.dvt, nhom: goc.nhom,
-    viTri: goc.tinhTrang === 'Trong kho' && goc.viTri ? goc.viTri : viTriKho() } : { loai: dm.loai[0] || '', ngayMua: khongTien() ? '' : hn(), thoiGianKH: 3, viTri: viTriKho(), dvt: 'cái' });
+    nguyenGia: goc.nguyenGia, thoiGianKH: goc.thoiGianKH, hanBH: goc.hanBH, ngayBTTiep: goc.ngayBTTiep, ghiChu: goc.ghiChu, dvt: goc.dvt, nhom: goc.nhom, congTy: goc.congTy,
+    viTri: goc.tinhTrang === 'Trong kho' && goc.viTri ? goc.viTri : viTriKho() } : { congTy: dm.congTy.length === 1 ? dm.congTy[0] : '', loai: dm.loai[0] || '', ngayMua: khongTien() ? '' : hn(), thoiGianKH: 3, viTri: viTriKho(), dvt: 'cái' });
   var tienKH = !khongTien();
   var body = fcard('Thông tin chung',
+      fi({ n: 'congTy', l: 'Tên công ty', v: a.congTy, t: 'select', ds: dm.congTy, bb: 1, ph: 'Chọn công ty', ph0: 'Chọn công ty', goi: dm.congTy.length ? '' : 'Chưa có công ty nào. Thêm trong mục Danh mục, Công ty.' }) +
       fi({ n: 'ten', l: 'Tên tài sản', v: a.ten, bb: 1, ph: 'Vd: Laptop Dell Latitude 5540', dau: 1 }) +
       '<div class="fg2">' + fi({ n: 'loai', l: 'Loại tài sản', v: a.loai, t: 'select', ds: dm.loai }) +
       (moi ? fi({ n: 'ma', l: 'Mã tài sản', v: maGoiY(a.loai), bb: 1, goi: 'Tự gợi ý theo loại, sửa được' }) : fi({ n: 'ma', l: 'Mã tài sản', v: a.ma, t: 'ro' })) + '</div>' +
@@ -2774,6 +2777,7 @@ function moTS(ma, goc) {
       if (moi && /^(soLuong|ma|serials)$/.test(el.name)) veLoTS();
     },
     luu: function (v) {
+      if (!v.congTy) throw new Error('Chọn tên công ty');
       if (!v.ten) throw new Error('Nhập tên tài sản');
       if (!v.ngayMua && tienKH) throw new Error('Chọn ngày mua');
       if (v.hanBH && v.ngayMua && v.hanBH < v.ngayMua) throw new Error('Hạn bảo hành phải sau ngày mua');
@@ -4432,7 +4436,7 @@ ACT.inTem = function (el) {
 /* ==========================================================================
    Hệ thống: danh mục (sửa tại chỗ, lưu một lần) và cài đặt
    ========================================================================== */
-var DM_TEN = [['loai', 'Loại tài sản', 'Dùng để lọc, báo cáo và gợi ý mã tài sản'], ['phongBan', 'Phòng ban', 'Phòng ban nhận tài sản, phòng ban của nhân viên'],
+var DM_TEN = [['congTy', 'Công ty', 'Công ty sở hữu tài sản, chọn khi thêm tài sản và dùng để lọc danh sách'], ['loai', 'Loại tài sản', 'Dùng để lọc, báo cáo và gợi ý mã tài sản'], ['phongBan', 'Phòng ban', 'Phòng ban nhận tài sản, phòng ban của nhân viên'],
   ['viTri', 'Vị trí', 'Nơi đặt tài sản, gợi ý khi nhập'], ['nhaCungCap', 'Nhà cung cấp', 'Gợi ý khi thêm tài sản'],
   ['loaiBT', 'Loại bảo trì', ''], ['ketQuaBT', 'Kết quả bảo trì', 'Khác Hoàn thành thì tài sản chuyển sang Đang sửa chữa'], ['hinhThucTL', 'Hình thức thanh lý', '']];
 VIEW['danh-muc'] = {
@@ -4465,7 +4469,7 @@ ACT.dmThem = function (el) {
 document.addEventListener('keydown', function (e) { if (e.key === 'Enter' && e.target.dataset && e.target.dataset.dm) { e.preventDefault(); ACT.dmThem({ dataset: { k: e.target.dataset.dm } }); } });
 ACT.dmHuy = function () { S.dmSua = null; render(); };
 /* Đổi tên một mục: đổi luôn ở mọi dòng dữ liệu đang dùng tên cũ (tên mới đã có thì gộp vào) */
-var COT_DM = { loai: [['ts', 'loai', 'tài sản']], phongBan: [['ts', 'phongBan', 'tài sản'], ['nv', 'phongBan', 'nhân viên'], ['gd', 'phongBan', 'phiếu giao nhận']],
+var COT_DM = { congTy: [['ts', 'congTy', 'tài sản']], loai: [['ts', 'loai', 'tài sản']], phongBan: [['ts', 'phongBan', 'tài sản'], ['nv', 'phongBan', 'nhân viên'], ['gd', 'phongBan', 'phiếu giao nhận']],
   viTri: [['ts', 'viTri', 'tài sản'], ['nv', 'viTriLamViec', 'nhân viên'], ['gd', 'viTri', 'phiếu giao nhận'], ['kk', 'viTriSo', 'dòng kiểm kê'], ['kk', 'viTriTT', 'dòng kiểm kê']],
   nhaCungCap: [['ts', 'nhaCungCap', 'tài sản']], hinhThucTL: [['tl', 'hinhThuc', 'phiếu thanh lý']], loaiBT: [['bt', 'loai', 'phiếu bảo trì']], ketQuaBT: [['bt', 'ketQua', 'phiếu bảo trì']] };
 ACT.dmDoiTen = function (el) {
@@ -4822,8 +4826,9 @@ var NHAP = {
     ['thangSD', 'Tháng năm sử dụng', ['thang nam su dung', 'nam thang su dung', 'thang su dung', 'nam su dung', 'thoi gian bat dau su dung', 'bat dau su dung'], 'thang'],
     ['ngayHM', 'Ngày báo hư / mất', ['ngay bao hu mat', 'ngay bao hu', 'ngay bao mat', 'ngay hong', 'ngay hu'], 'ngay'],
     ['dvt', 'Đơn vị tính', ['don vi tinh', 'dvt', 'don vi', 'unit'], 'chu'],
-    ['soLuong', 'Số lượng', ['so luong', 'sl', 'qty', 'quantity', 'so sach'], 'so']
-  ], mau: ['', 'Laptop Dell Latitude 5540', 'Thiết bị IT', 'Dell', 'Latitude 5540', 'SN2024001', '15/01/2026', 'Dell Vietnam', 25000000, 3, '15/01/2029', 'Trong kho', '', '', 'Kho chính', '', '', '', 'Công cụ dụng cụ', '01/2026', '', 'cái', 1] },
+    ['soLuong', 'Số lượng', ['so luong', 'sl', 'qty', 'quantity', 'so sach'], 'so'],
+    ['congTy', 'Tên công ty', ['ten cong ty', 'cong ty', 'don vi so huu', 'company'], 'chu']
+  ], mau: ['', 'Laptop Dell Latitude 5540', 'Thiết bị IT', 'Dell', 'Latitude 5540', 'SN2024001', '15/01/2026', 'Dell Vietnam', 25000000, 3, '15/01/2029', 'Trong kho', '', '', 'Kho chính', '', '', '', 'Công cụ dụng cụ', '01/2026', '', 'cái', 1, 'Công ty ABC'] },
   nv: { ten: 'nhân viên', fn: 'importEmployees', go: 'nhan-vien', cot: [
     ['ma', 'Mã NV', ['ma nv', 'ma nhan vien', 'ma so', 'ma', 'id', 'employee id'], 'ma'],
     ['hoTen', 'Họ tên', ['ho ten', 'ho va ten', 'ten nhan vien', 'ten', 'nhan vien', 'full name', 'name'], 'chu', 1],
@@ -5144,7 +5149,7 @@ function moNhap(loai) {
       '<div id="nhapXem"></div>' +
       fcard('Tuỳ chọn', '<div class="f"><label>Mã đã có trong web app</label>' + seg('trung', [['bo-qua', 'Bỏ qua dòng đó'], ['cap-nhat', 'Cập nhật thông tin']], 'bo-qua') +
         '<div class="goi" style="margin-top:-6px">' + (loai === 'ts' ? 'Cập nhật chỉ ghi đè ô có giá trị trong file; tình trạng và người sử dụng không đổi (đi qua cấp phát, thu hồi).' : 'Cập nhật chỉ ghi đè ô có giá trị trong file.') + '</div></div>' +
-        '<label class="optb"><input type="checkbox" name="themDanhMuc" checked> Thêm ' + (loai === 'ts' ? 'loại, phòng ban, vị trí, nhà cung cấp' : 'phòng ban, nơi làm việc') + ' mới vào Danh mục</label>' +
+        '<label class="optb"><input type="checkbox" name="themDanhMuc" checked> Thêm ' + (loai === 'ts' ? 'công ty, loại, phòng ban, vị trí, nhà cung cấp' : 'phòng ban, nơi làm việc') + ' mới vào Danh mục</label>' +
         '<label class="optb" id="oBoLoi" style="display:none"><input type="checkbox" name="boLoi"> <span id="chuBoLoi">Bỏ qua dòng lỗi, nhập các dòng còn lại</span></label>'),
     sau: function () {
       S.segCb.nguon = function (x) { $('#nguonTep').style.display = x === 'tep' ? '' : 'none'; $('#nguonDan').style.display = x === 'dan' ? '' : 'none'; if (x === 'dan') $('#oDan').focus(); };
@@ -5270,7 +5275,7 @@ function dsChonMau(loai) {
   if (loai === 'ts') return [
     { k: 'tinhTrang', ds: d.ttList.filter(function (t) { return t !== 'Đã thanh lý' && t !== 'Đang cho mượn'; }), chan: 1, ten: 'Tình trạng' },
     { k: 'nguoiSD', ds: nvDung, chan: 1, ten: 'Người sử dụng' },
-    { k: 'loai', ds: d.dm.loai, ten: 'Loại tài sản' }, { k: 'phongBan', ds: d.dm.phongBan, ten: 'Phòng ban' },
+    { k: 'congTy', ds: d.dm.congTy, ten: 'Công ty' }, { k: 'loai', ds: d.dm.loai, ten: 'Loại tài sản' }, { k: 'phongBan', ds: d.dm.phongBan, ten: 'Phòng ban' },
     { k: 'viTri', ds: dsViTri(), ten: 'Vị trí' }, { k: 'nhaCungCap', ds: d.dm.nhaCungCap, ten: 'Nhà cung cấp' }];
   return [{ k: 'trangThai', ds: ['Đang làm', 'Đã nghỉ'], chan: 1, ten: 'Trạng thái' }, { k: 'quanLyKho', ds: ['x'], chan: 1, ten: 'Quản lý kho' },
     { k: 'phongBan', ds: d.dm.phongBan, ten: 'Phòng ban' }, { k: 'viTriLamViec', ds: dsViTri(), ten: 'Nơi làm việc' }];
