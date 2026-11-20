@@ -2409,10 +2409,10 @@ VIEW['tai-san'] = {
       nut('Nhập từ Excel', 'nhapTS', { i: 'upload' }) + nut('Thêm tài sản', 'themTS', { k: 'btn-p', i: 'plus' }));
     h += tabs('tai-san', 'tab', TAB_TS.filter(function (t) { return t[0] === 'ngoai' ? khongTL() : t[0] !== 'tl' || !khongTL() || S.d.ts.some(function (a) { return a.tinhTrang === TL; }); }).map(function (t) { return [t[0], t[1], S.d.ts.filter(function (a) { return locTab(a, t[0]); }).length]; }), cur);
     h += '<div class="card"><div class="loc">' + oTim('tai-san', 'Tìm mã, tên, serial, người dùng') +
-      chipSel('tai-san', 'loai', 'Tất cả loại', uniq(S.d.dm.loai.concat(S.d.ts.map(function (a) { return a.loai; })))) +
+      chipSel('tai-san', 'ct', 'Tất cả công ty', uniq(S.d.dm.congTy.concat(S.d.ts.map(function (a) { return a.congTy; })))) +
       chipSel('tai-san', 'pb', 'Tất cả phòng ban', uniq(S.d.dm.phongBan.concat(S.d.ts.map(function (a) { return a.phongBan; })))) +
       chipSel('tai-san', 'vt', 'Tất cả vị trí', dsViTri()) +
-      chipSel('tai-san', 'ct', 'Tất cả công ty', uniq(S.d.dm.congTy.concat(S.d.ts.map(function (a) { return a.congTy; })))) + '<span class="dem-kq" id="demkq"></span></div><div id="ds">' + this.ds() + '</div></div>';
+      chipSel('tai-san', 'loai', 'Tất cả loại', uniq(S.d.dm.loai.concat(S.d.ts.map(function (a) { return a.loai; })))) + '<span class="dem-kq" id="demkq"></span></div><div id="ds">' + this.ds() + '</div></div>';
     h += '<div class="hl" id="hl"></div>';
     return h;
   },
