@@ -880,6 +880,13 @@ html[data-theme="dark"] .tl-i.y::before{box-shadow:0 0 0 2px rgba(229,192,74,.35
 /* thanh chọn nhiều dòng, thông báo nhanh */
 html[data-theme="dark"] .hl,html[data-theme="dark"] .toast{background:#2A2F3D}
 html[data-theme="dark"] .dn-ma-vach i{filter:invert(.85)}
+/* Tem QR: nền tối, chữ sáng, tem chưa chọn không bị mờ quá; mã QR giữ nền trắng để quét được */
+html[data-theme="dark"] .tem{background:var(--card);border-color:var(--field-h);opacity:.8}
+html[data-theme="dark"] .tem.on{opacity:1;border-color:var(--accent);box-shadow:0 0 0 2px rgba(110,156,240,.35)}
+html[data-theme="dark"] .tem b{color:#F4F5FA}
+html[data-theme="dark"] .tem .n{color:#E3E5EE}
+html[data-theme="dark"] .tem .v{color:#B4B9C7}
+html[data-theme="dark"] .tem img{background:#fff;border-radius:8px;padding:4px}
 /* nút đổi giao diện */
 .gd-nut svg.i{width:18px;height:18px}
 }
@@ -4479,7 +4486,7 @@ VIEW['tem-qr'] = {
   hl: function () {
     var n = Object.keys(S.sel['tem-qr'] || {}).length, el = $('#hl'); if (!el) return;
     el.classList.toggle('on', n > 0);
-    el.innerHTML = '<b>Đã chọn ' + n + ' tem</b><span class="sp"></span><button type="button" class="btn" style="background:#fff;color:var(--ink)" data-act="inTem">In tem</button><button type="button" class="btn" data-act="boChon" data-v="tem-qr">' + ic('x') + '</button>';
+    el.innerHTML = '<b>Đã chọn ' + n + ' tem</b><span class="sp"></span><button type="button" class="btn" style="background:#fff;color:#181925" data-act="inTem">In tem</button><button type="button" class="btn" data-act="boChon" data-v="tem-qr">' + ic('x') + '</button>';
   }
 };
 function temLoc() {
