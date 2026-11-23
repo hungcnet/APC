@@ -2470,9 +2470,9 @@ VIEW['tong-quan'] = {
     var lk = Object.keys(loai).sort(function (a, b) { return loai[b].g - loai[a].g; }).slice(0, kT ? 8 : 99), mxl = Math.max.apply(null, lk.map(function (k) { return loai[k].g; }).concat([1]));
     var pb = demTheo(ql.filter(function (a) { return a.phongBan; }), function (a) { return a.phongBan; });
     var pk2 = Object.keys(pb).sort(function (a, b) { return pb[b] - pb[a]; }).slice(0, 8), mxp = Math.max.apply(null, pk2.map(function (k) { return pb[k]; }).concat([1]));
-    // Biểu đồ bảo trì + hai khung theo loại / phòng ban xếp cột trái, Hoạt động gần đây cột phải: hai cột cao bằng nhau, không chừa trống
+    // Hai khung theo loại / phòng ban xếp cột trái, Hoạt động gần đây cột phải: hai cột cao bằng nhau, không chừa trống
     h += '<div class="luoi g21">' +
-      '<div class="cot-trai">' + the(kT ? 'Bảo trì 12 tháng' : 'Chi phí bảo trì 12 tháng', 'Tổng ' + tien(tong12) + (kT ? ' lần' : 'đ'), cot) +
+      '<div class="cot-trai">' +
       '<div class="luoi g2">' +
       the(kT ? 'Tài sản theo vị trí' : 'Giá trị còn lại theo loại', kT ? 'Nhiều nhất trước' : '', '<div class="cot-ngang">' + lk.map(function (k) {
         return '<div class="h"><span>' + esc(k) + (kT ? '' : ' <span class="mo">(' + loai[k].n + ')</span>') + '</span><div class="thanh"><i style="width:' + (loai[k].g / mxl * 100) + '%"></i></div><b>' + (kT ? loai[k].n : tienGon(loai[k].g)) + '</b></div>';
@@ -2482,7 +2482,9 @@ VIEW['tong-quan'] = {
       }).join('') + '</div>' : trong('Chưa giao tài sản cho phòng ban nào')) +
       '</div></div>' +
       the('Hoạt động gần đây', '', hdh) +
-      '</div>';
+      '</div>' +
+      // Chi phí bảo trì 12 tháng: nằm dưới cùng, rộng hết chiều ngang
+      '<div class="mt16">' + the(kT ? 'Bảo trì 12 tháng' : 'Chi phí bảo trì 12 tháng', 'Tổng ' + tien(tong12) + (kT ? ' lần' : 'đ'), cot) + '</div>';
     return h;
   }
 };
