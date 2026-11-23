@@ -839,6 +839,8 @@ html[data-theme="dark"]{
   --line:#262B38; --line2:#1F2430; --line-soft:#212633; --field:#363C4C; --field-h:#566077; --row-h:#1B1F29;
   --sh-rgb:0,0,0; --sh-rgb2:0,0,0; --sh-rgb3:0,0,0; --sh-rgb4:0,0,0;
   --sh-pop:0 12px 40px rgba(0,0,0,.55);
+  --ro-bg:#1C202A; --warn-r-bg:rgba(242,133,133,.10); --warn-r-line:rgba(242,133,133,.40);
+  --warn-y-bg:rgba(229,192,74,.10); --warn-y-line:rgba(229,192,74,.40);
 }
 /* nền thẻ, ô nhập, bảng nổi: đang cố định #fff trong CSS gốc */
 html[data-theme="dark"] .sb,html[data-theme="dark"] .tb-tim,html[data-theme="dark"] .tn-d,html[data-theme="dark"] .btn,
@@ -1658,7 +1660,7 @@ function fi(o) {
   } else if (o.list) c = combo({ n: o.n, v: v, ph: o.ph, key: o.list, dau: o.dau });
   else if (t === 'area') c = '<textarea class="fi" name="' + o.n + '" rows="3"' + at + '>' + esc(v) + '</textarea>';
   else if (t === 'tien') c = '<input class="fi" name="' + o.n + '" data-tien inputmode="numeric" value="' + (v === '' ? '' : tien(v)) + '"' + at + '>';
-  else if (t === 'ro') c = '<input class="fi" name="' + o.n + '" value="' + esc(v) + '" readonly style="background:#F8F8FB;color:var(--muted)"' + at + '>';
+  else if (t === 'ro') c = '<input class="fi" name="' + o.n + '" value="' + esc(v) + '" readonly style="background:var(--ro-bg,#F8F8FB);color:var(--muted)"' + at + '>';
   else if (t === 'date') c = oNgay(o, v);
   else c = '<input class="fi" type="' + t + '" name="' + o.n + '" value="' + esc(v) + '"' + (o.list ? ' list="' + o.list + '"' : '') + (t === 'number' ? ' inputmode="decimal" step="any"' : '') + at + '>';
   return '<div class="f"' + (o.an ? ' style="display:none"' : '') + (o.wrap ? ' id="' + o.wrap + '"' : '') + '><label>' + o.l + (o.bb ? ' <i>*</i>' : '') + '</label>' + c +
@@ -3634,7 +3636,7 @@ VIEW.kk = {
   hl: function () {
     var n = Object.keys(S.kkSua).length, el = $('#hl'); if (!el) return;
     el.classList.toggle('on', n > 0);
-    el.innerHTML = '<b>' + n + ' kết quả chưa lưu</b><span class="sp"></span><button type="button" class="btn" data-act="kkBo">Bỏ thay đổi</button><button type="button" class="btn" style="background:#fff;color:var(--ink)" data-act="luuKK">Lưu kết quả</button>';
+    el.innerHTML = '<b>' + n + ' kết quả chưa lưu</b><span class="sp"></span><button type="button" class="btn" data-act="kkBo">Bỏ thay đổi</button><button type="button" class="btn" style="background:#fff;color:#181925" data-act="luuKK">Lưu kết quả</button>';
   }
 };
 /* Dòng có nằm trong tab không: theo kết quả ĐÃ LƯU, để dòng vừa bấm (kể cả "Đánh dấu chưa kiểm là Có mặt") vẫn đứng yên, tô vàng
@@ -4105,7 +4107,7 @@ VIEW.nv = {
     var h = ph({ crumb: '<a data-go="nhan-vien">Nhân viên</a> / ' + esc(ma), t: esc(n.hoTen) + ' <span style="vertical-align:middle;display:inline-block;margin-left:6px">' + bdc(n.trangThai || 'Đang làm', n.trangThai === 'Đã nghỉ' ? 'c-mute' : 'c-green') + '</span>',
       s: esc([n.chucVu, n.phongBan].filter(String).join(' · ')),
       a: (coTheXoaNV(ma) ? nut('Xoá', 'xoaNV', { k: 'btn-d', i: 'trash', d: { ma: ma } }) : '') + nut('Sửa', 'suaNV', { i: 'edit', d: { ma: ma } }) + (th.length ? nut('Thu hồi tất cả (' + th.length + ')', 'thuHoiNV', { k: 'btn-p', i: 'in', d: { ma: ma } }) : nut('Cấp phát', 'capPhatNV', { k: 'btn-p', i: 'out', d: { ma: ma } })) });
-    if (n.trangThai === 'Đã nghỉ' && g.length) h += '<div class="card mb16" style="border-color:#F0C4C4;background:#FFF8F8"><b style="color:var(--red)">Nhân viên đã nghỉ nhưng còn giữ ' + g.length + ' tài sản.</b> <span class="mo">Bấm Thu hồi tất cả để đưa về kho.</span></div>';
+    if (n.trangThai === 'Đã nghỉ' && g.length) h += '<div class="card mb16" style="border-color:var(--warn-r-line,#F0C4C4);background:var(--warn-r-bg,#FFF8F8)"><b style="color:var(--red)">Nhân viên đã nghỉ nhưng còn giữ ' + g.length + ' tài sản.</b> <span class="mo">Bấm Thu hồi tất cả để đưa về kho.</span></div>';
     var info = '<div class="kv">' + kv('Mã nhân viên', esc(n.ma)) + kv('Phòng ban', esc(n.phongBan)) + kv('Chức vụ', esc(n.chucVu)) + kv('Số điện thoại', esc(n.sdt)) + kv('Email', esc(n.email)) + kv('Nơi làm việc', esc(n.viTriLamViec)) + '</div>';
     var bangGiu = g.length ? bang([
       { t: 'Tài sản', cls: 'chinh', f: function (a) { return '<div class="ts-o"><div class="ts-ic">' + icLoai(a.loai) + '</div><div><div class="ts-ten">' + esc(a.ten) + '</div><div class="ts-ma">' + esc(a.ma) + '</div></div></div>'; } },
@@ -4480,7 +4482,7 @@ VIEW['tem-qr'] = {
     var f = F('tem-qr'), sel = S.sel['tem-qr'] = S.sel['tem-qr'] || {};
     var h = ph({ crumb: 'Báo cáo', t: 'Tem QR', s: 'Dán tem lên tài sản. Quét bằng camera điện thoại để mở đúng trang tài sản trong web app.',
       a: nut('Chọn tất cả đang lọc', 'temHet') + nut('In tem đã chọn', 'inTem', { k: 'btn-p', i: 'printer' }) });
-    if (!S.d.url) h += '<div class="card mb16" style="border-color:#E8D27A;background:#FFFBEA"><b>Chưa có link web app.</b> <span class="mo">Mã QR chỉ tạo được sau khi triển khai web app (Triển khai &gt; Tạo bản triển khai mới). Đang hiển thị mẫu.</span></div>';
+    if (!S.d.url) h += '<div class="card mb16" style="border-color:var(--warn-y-line,#E8D27A);background:var(--warn-y-bg,#FFFBEA)"><b>Chưa có link web app.</b> <span class="mo">Mã QR chỉ tạo được sau khi triển khai web app (Triển khai &gt; Tạo bản triển khai mới). Đang hiển thị mẫu.</span></div>';
     h += '<div class="card"><div class="loc">' + oTim('tem-qr', 'Tìm mã, tên') + chipSel('tem-qr', 'loai', 'Tất cả loại', uniq(S.d.ts.filter(conQL).map(function (a) { return a.loai; }))) +
       chipSel('tem-qr', 'pb', 'Tất cả phòng ban', uniq(S.d.ts.filter(conQL).map(function (a) { return a.phongBan; }))) +
       chipSel('tem-qr', 'vt', 'Tất cả vị trí', uniq(S.d.ts.filter(conQL).map(function (a) { return a.viTri; }))) + '<span class="dem-kq" id="demkq"></span></div><div id="ds">' + this.ds() + '</div></div><div class="hl" id="hl"></div>';
